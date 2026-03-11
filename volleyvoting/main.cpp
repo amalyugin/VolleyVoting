@@ -51,6 +51,18 @@ typedef std::pair<std::string, player_stat> statpair;
 
 
 
+
+
+int Ntours = 0;
+int Npo = 0;
+std::vector<int> maxTourInPo;
+int playerScores[3] = { 3, 2, 1 };
+int playerPoScores[3] = { 3, 2, 1 };
+
+
+
+
+
 void ltrim(std::string& s) {
 	size_t first_non_space = s.find_first_not_of(" \t\n\r\f\v");
 
@@ -143,22 +155,40 @@ int almostCompare(int n, std::string const& s1, std::string const& s2)
 	return 0;
 }
 
+std::string TourNumberToString(int tour);
 
 std::string getToursString(std::vector<int> ts)
 {
-	std::vector<std::pair<int, int> > ps;
-	ps.push_back(std::make_pair(ts[0], ts[0]));
-	for (size_t i = 1; i < ts.size(); i++)
+	std::vector<int> poTs;
+	int i = 0;
+	for (; i < ts.size(); ++i)
 	{
-		if (ts[i] == ps.back().second + 1) ps.back().second++;
-		else ps.push_back(std::make_pair(ts[i], ts[i]));
+		if (ts[i] > Ntours)
+			break;
+	}
+	for (int j = i; j < ts.size(); ++j) poTs.push_back(ts[j]);
+	ts.erase(ts.begin() + i, ts.end());
+
+	std::vector<std::pair<int, int> > ps;
+
+	if (!ts.empty())
+	{
+		ps.push_back(std::make_pair(ts[0], ts[0]));
+		for (size_t i = 1; i < ts.size(); i++)
+		{
+			if (ts[i] == ps.back().second + 1) ps.back().second++;
+			else ps.push_back(std::make_pair(ts[i], ts[i]));
+		}
 	}
 
 	std::string str;
 	for (int i = 0; i < ps.size(); ++i)
 	{
-		if (i != 0) str += ", ";
-		str += std::to_string(ps[i].first) + "-" + std::to_string(ps[i].second);
+		str += std::to_string(ps[i].first) + "-" + std::to_string(ps[i].second) + ", ";
+	}
+	for (int i = 0; i < poTs.size(); ++i)
+	{
+		str += TourNumberToString(poTs[i]) + ", ";
 	}
 	return str;
 }
@@ -226,13 +256,6 @@ bool comparestat(statpair const& p0, statpair const& p1, int ty)
 }
 
 
-int Ntours = 0;
-int Npo = 0;
-std::vector<int> maxTourInPo;
-int playerScores[3] = { 3, 2, 1 };
-int playerPoScores[3] = { 3, 2, 1 };
-
-
 //#define USE_MAX_METHOD
 
 int TourStringToNumber(const std::string& str)
@@ -261,6 +284,29 @@ int TourStringToNumber(const std::string& str)
 			res += maxTourInPo[i];
 	}
 	return res;
+}
+
+std::string TourNumberToString(int tour)
+{
+	if (tour <= Ntours)
+		return std::to_string(tour);
+	else
+	{
+		int poi = tour - Ntours - 1;
+		int p = 0;
+		for (int i = 0; i < maxTourInPo.size(); ++i)
+		{
+			if (poi >= p && poi < p + maxTourInPo[i])
+			{
+				int pow2 = 1;
+				for (int j = i + 1; j < maxTourInPo.size(); ++j) pow2 *= 2;
+				std::string str = "1/" + std::to_string(pow2) + "_" + std::to_string(poi - p + 1);
+				return str;
+			}
+			p += maxTourInPo[i];
+		}
+	}
+	return "bad";
 }
 
 int main(int argc, char* argv[])
@@ -582,7 +628,7 @@ int main(int argc, char* argv[])
 		[](statpair const& a, statpair const& b) { return comparestat(a, b, 0); });
 
 	outf << "\nALL TOURS N = " << votInTourNum.size() << " (в скобках количество голосований в туре):\n";
-	for (auto& t : votInTourNum) outf << t.first << "(" << t.second << ")  ";
+	for (auto& t : votInTourNum) outf << TourNumberToString(t.first) << "(" << t.second << ")  ";
 	outf << std::endl;
 
 	outf << "\nголосовавшие N = " << includeVotMans.size() << " (в скобках количество голосований): ";
