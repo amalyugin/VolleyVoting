@@ -1,0 +1,1 @@
+best.exe data.txt result.txt 10 25
