@@ -45,6 +45,11 @@ struct player_stat
 	//double auxSum = 0;
 };
 
+struct team_stat 
+{
+	int votingNum = 0;
+};
+
 typedef std::pair<std::string, player_info> playerpair;
 typedef std::pair<std::string, voter_info> voterpair;
 typedef std::pair<std::string, player_stat> statpair;
@@ -338,7 +343,8 @@ int main(int argc, char* argv[])
 
 	std::string log;
 
-	std::map<std::string, player_stat> stats;
+	std::map<std::string, player_stat> playerStats;
+	std::map<std::string, team_stat> teamStats;
 
 	std::vector<int> votingTours;
 
@@ -483,8 +489,17 @@ int main(int argc, char* argv[])
 		//подсчет баллов
 		if (!votings.empty() && !players.empty() && !teams.empty())
 		{
+			for (const auto& team : teams) teamStats[team] = team_stat();
+			for (auto const& vot : votings)
+			{
+				auto it1 = teamStats.find(vot.teams.first);
+				it1->second.votingNum += 1;
+				auto it2 = teamStats.find(vot.teams.second);
+				it2->second.votingNum += 1;
+			}
+
 			for (int i = 0; i < players.size(); ++i)
-				stats[players[i].first] = player_stat();
+				playerStats[players[i].first] = player_stat();
 
 			std::sort(votings.begin(), votings.end(), 
 				[](const voting_data& a, const voting_data& b) { return a.tour < b.tour; });
@@ -548,7 +563,7 @@ int main(int argc, char* argv[])
 
 						for (int m = 0; m < auxVec.size(); ++m)
 						{
-							auto sit = stats.find(auxVec[m].first);
+							auto sit = playerStats.find(auxVec[m].first);
 							for (int k = 0; k < 3; ++k)
 							{
 								double b = plsc[k];
@@ -564,7 +579,7 @@ int main(int argc, char* argv[])
 							[](const auto& p1, const auto& p2) { return p1.second > p2.second; });
 						for (int k = 0; k < 3; ++k)
 						{
-							auto sit = stats.find(auxVec[k].first);
+							auto sit = playerStats.find(auxVec[k].first);
 							sit->second.max += 3.0 - k;
 							sit->second.maxPlaces[k] += 1;
 					}
@@ -583,7 +598,7 @@ int main(int argc, char* argv[])
 							[](const auto& p1, const auto& p2) { return p1.second.s > p2.second.s; });
 						for (int m = 0; m < auxVec.size(); ++m)
 						{
-							auto sit = stats.find(auxVec[m].first);
+							auto sit = playerStats.find(auxVec[m].first);
 							sit->second.av += auxVec[m].second.s;
 							if (m < 3) sit->second.avPlaces[m] += 1;
 						}
@@ -616,13 +631,17 @@ int main(int argc, char* argv[])
 	outf << "CALL:\n";
 	for (int i = 0; i < argc; ++i) outf << argv[i] << "  ";
 
-	outf << "\n\nTEAMS:\n";
-	for (auto& team : teams) outf << team << "  ";
+	outf << "\n\nКоманды (число голосований по команде):\n";
+	for (auto& team : teams) 
+	{
+		auto it = teamStats.find(team);
+		outf << team << "(" << std::to_string(it->second.votingNum) << ")  ";
+	}
 
 	outf << "\n\nLOG:\n" << log;
 
 	std::vector<statpair> statsVec;
-	for (auto& st : stats) statsVec.push_back(st);
+	for (auto& st : playerStats) statsVec.push_back(st);
 
 	std::sort(statsVec.begin(), statsVec.end(), 
 		[](statpair const& a, statpair const& b) { return comparestat(a, b, 0); });
