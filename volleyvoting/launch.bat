@@ -1,1 +1,1 @@
-best.exe data.txt result.txt 10 25
+volleyvoting.exe data.txt result.txt 10 1/1_5
