@@ -1,1 +1,1 @@
-volleyvoting.exe data.txt result.txt 10 1/1_5
+volleyvoting.exe women2627.txt result.txt 1 26
